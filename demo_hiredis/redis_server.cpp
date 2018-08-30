@@ -433,7 +433,7 @@ std::vector<std::string> StringCommand::mget(const std::vector<std::string>& vke
     std::string str;
     for (auto m : vkeys) {
         str.append(m);
-        str.append(" ");
+        str.append("\r\n");
     }
     
     redisReply *reply = NULL;
@@ -485,16 +485,26 @@ long long StringCommand::mset(const std::map<std::string, std::string>& mvks, co
         return -1;
     }
     
-    std::ostringstream out;
+    std::vector<std::string> cmds;
+    cmds.push_back("MSET");
+    
     for (auto m : mvks) {
-        out << " " << std::string(path + m.first) << " " << m.second << " ";
+        cmds.push_back(path + m.first);
+        cmds.push_back(m.second);
     }
-    std::string str(out.str());
+    
+    std::vector<const char*> argv(cmds.size());
+    std::vector<size_t> argvlen(cmds.size());
+    int j = 0;
+    for (auto iter = cmds.begin(); iter != cmds.end(); ++iter, j++) {
+        argv[j] = iter->c_str();
+        argvlen[j] = iter->size();
+    }
     
     redisReply *reply = NULL;
     {
         this->srv->lock();
-        reply = (redisReply *)redisCommand(c, "MSET %s", str.c_str());
+        reply = static_cast<redisReply*>(redisCommandArgv(c, (int)cmds.size(), &(argv[0]), &(argvlen[0])));
         this->srv->unlock();
     }
     
@@ -841,7 +851,7 @@ std::string HashCommand::hget(const std::string& key, const std::string& field, 
             result.append(reply->str);
         }
         else {
-            printf("%s\n", reply->str);
+        
         }
     }
     freeReplyObject(reply);

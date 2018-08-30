@@ -24,18 +24,24 @@ pthread_cond_t cond_t;
 void* entry(void* args) {
     printf("begin\n");
     
-    long long c = redisSrv.stringCommand()->setnx("config:autoincr", "1000000");
-    printf("%lld\n", c);
     int i = 1000;
-    while (i <= 9999) {
+    pthread_mutex_lock(&mutext_t);
+    
+    while (i++ <= 9999) {
         {
+            char phone_buf[12] = {0};
+            sprintf(phone_buf, "1363276%d", i);
+            
+            std::string sphone = redisSrv.hashCommand()->hget(phone_buf, "phone", "users:");
+            if (!sphone.empty()) {
+                continue;
+            }
+            
             long long uid = redisSrv.stringCommand()->incr("config:autoincr");
             char uid_buf[64] = {0};
             sprintf(uid_buf, "%lld", uid);
             
-            char phone_buf[12] = {0};
-            sprintf(phone_buf, "1363276%d", i);
-            
+            long long c = 0;
             c = redisSrv.hashCommand()->hset(phone_buf, "phone", phone_buf, "users:");
             c = redisSrv.hashCommand()->hset(phone_buf, "name", "liwei", "users:");
             c = redisSrv.hashCommand()->hset(phone_buf, "sex", "1", "users:");
@@ -46,7 +52,7 @@ void* entry(void* args) {
             redisSrv.hashCommand()->hset(uid_buf, "phone", phone_buf, "uids:");
         }
         
-        i++;
+       // i++;
     }
 
 //
@@ -55,15 +61,27 @@ void* entry(void* args) {
 //        redisSrv.hashCommand()->hget("", "", "uids:");
 //    }
     
+    pthread_mutex_unlock(&mutext_t);
+    
     pthread_cond_signal(&cond_t);
     
-    printf("over\n");
+    printf("end\n");
     
     return 0;
 }
 
 int main(int argc, const char * argv[]) {
     redisSrv.start("127.0.0.1", 6379, 1);
+    
+    long long c = redisSrv.stringCommand()->setnx("config:autoincr", "1000000");
+    printf("%lld\n", c);
+    std::map<std::string, std::string> m;
+    m["aaa1"] = "aaa1";
+    m["bbb1"] = "bbb1";
+    m["ccc1"] = "ccc1";
+    redisSrv.stringCommand()->mset(m);
+    redisSrv.stringCommand()->mget({"aaa1", "bbb1", "ccc1"});
+    
     pthread_mutex_init(&mutext_t, NULL);
     pthread_cond_init(&cond_t, NULL);
     

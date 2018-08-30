@@ -29,7 +29,6 @@ class RedisBaseServer;
 class RedisServer;
 class RedisAsyncServer;
 
-
 class Command {
 public:
     Command();
