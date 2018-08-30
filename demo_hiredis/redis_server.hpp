@@ -153,7 +153,7 @@ public:
     virtual ~RedisServer();
 
 public:
-    int start(const char *ip = "127.0.0.1", int port = 6379, int db = 0);
+    int connect(const char *ip = "127.0.0.1", int port = 6379, int db = 0);
     bool auth(const std::string& psd);
     long long select(int db);
     
@@ -185,7 +185,8 @@ public:
     ~RedisServerPool();
 
 public:
-    
+    int connectRedis(const char*ip, int port, int max = 5, int idle = 2);
+    RedisServer* requestRedisServer();
 };
 
 class RedisAsyncServer {

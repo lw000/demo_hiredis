@@ -460,19 +460,6 @@ std::vector<std::string> StringCommand::mget(const std::vector<std::string>& vke
         this->srv->unlock();
     }
     
-//    std::string str;
-//    for (auto m : vkeys) {
-//        str.append(m);
-//        str.append(" ");
-//    }
-//
-//    redisReply *reply = NULL;
-//    {
-//        this->srv->lock();
-//        reply = (redisReply *)redisCommand(c, "MGET %s", std::string(path + str).c_str());
-//        this->srv->unlock();
-//    }
-    
     std::vector<std::string> result;
     if (reply) {
         if (reply->str == NULL) {
@@ -1143,7 +1130,7 @@ RedisServer::~RedisServer() {
     pthread_mutex_destroy(&this->t);
 }
 
-int RedisServer::start(const char *ip, int port, int db) {
+int RedisServer::connect(const char *ip, int port, int db) {
     struct timeval timeout = { 2, 500000 }; // 2.5 seconds
     this->c = redisConnectWithTimeout(ip, port, timeout);
     if (this->c == NULL || this->c->err) {
@@ -1241,7 +1228,7 @@ long long RedisServer::setConfig(const std::string& key, const std::string& valu
     redisReply* reply = NULL;
     {
         this->lock();
-        reply = (redisReply *)redisCommand(this->c, "CONFIG SET %s %s", key.c_str(), value.c_str());
+        reply = static_cast<redisReply*>(redisCommand(this->c, "CONFIG SET %s %s", key.c_str(), value.c_str()));
         this->unlock();
     }
     
@@ -1331,6 +1318,22 @@ RedisServerPool::~RedisServerPool() {
     
 }
 
+int RedisServerPool::connectRedis(const char*ip, int port, int max, int idle) {
+    if (max < 5) {
+        max = 5;
+    }
+    
+    if (idle < 2) {
+        idle = 2;
+    }
+    
+    return 0;
+}
+
+RedisServer* RedisServerPool::requestRedisServer() {
+    
+    return NULL;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RedisAsyncServer::RedisAsyncServer() {
