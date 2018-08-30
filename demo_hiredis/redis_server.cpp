@@ -430,18 +430,48 @@ std::vector<std::string> StringCommand::mget(const std::vector<std::string>& vke
         return std::vector<std::string>();
     }
     
-    std::string str;
+    std::vector<std::string> cmds;
+    cmds.push_back("MGET");
+    
     for (auto m : vkeys) {
-        str.append(m);
-        str.append("\r\n");
+        cmds.push_back(path + m);
+    }
+    
+    std::vector<const char*> argv(cmds.size());
+    std::vector<size_t> argvlen(cmds.size());
+    int j = 0;
+    for (auto iter = cmds.begin(); iter != cmds.end(); ++iter, j++) {
+        argv[j] = iter->c_str();
+        argvlen[j] = iter->size();
+    }
+    
+    if (argv.empty()) {
+        return std::vector<std::string>();
+    }
+    
+    if (argvlen.empty()) {
+        return std::vector<std::string>();
     }
     
     redisReply *reply = NULL;
     {
         this->srv->lock();
-        reply = (redisReply *)redisCommand(c, "MGET %s", std::string(path + str).c_str());
+        reply = static_cast<redisReply*>(redisCommandArgv(c, (int)cmds.size(), &(argv[0]), &(argvlen[0])));
         this->srv->unlock();
     }
+    
+//    std::string str;
+//    for (auto m : vkeys) {
+//        str.append(m);
+//        str.append(" ");
+//    }
+//
+//    redisReply *reply = NULL;
+//    {
+//        this->srv->lock();
+//        reply = (redisReply *)redisCommand(c, "MGET %s", std::string(path + str).c_str());
+//        this->srv->unlock();
+//    }
     
     std::vector<std::string> result;
     if (reply) {
@@ -499,6 +529,14 @@ long long StringCommand::mset(const std::map<std::string, std::string>& mvks, co
     for (auto iter = cmds.begin(); iter != cmds.end(); ++iter, j++) {
         argv[j] = iter->c_str();
         argvlen[j] = iter->size();
+    }
+    
+    if (argv.empty()) {
+        return -1;
+    }
+    
+    if (argvlen.empty()) {
+        return -1;
     }
     
     redisReply *reply = NULL;
@@ -714,22 +752,50 @@ long long HashCommand::hmset(const std::string& key, const std::map<std::string,
         return -1;
     }
     
-//    if (fieldvalues.size() % 2 != 0) {
-//        printf("fieldvalues error!\n");
-//        return -1;
-//    }
+    std::vector<std::string> cmds;
+    cmds.push_back("HMSET");
+    cmds.push_back((path + key));
     
-    std::ostringstream out;
     for (auto m : fieldvalues) {
-        out << m.first << " " << m.second << " ";
+        cmds.push_back(m.first);
+        cmds.push_back(m.second);
     }
-    std::string cmds(out.str());
+    
+    std::vector<const char*> argv(cmds.size());
+    std::vector<size_t> argvlen(cmds.size());
+    int j = 0;
+    for (auto iter = cmds.begin(); iter != cmds.end(); ++iter, j++) {
+        argv[j] = iter->c_str();
+        argvlen[j] = iter->size();
+    }
+    
+    if (argv.empty()) {
+        return -1;
+    }
+    
+    if (argvlen.empty()) {
+        return -1;
+    }
+    
     redisReply *reply = NULL;
     {
         this->srv->lock();
-        reply = (redisReply *)redisCommand(c, "HMSET %s %s", std::string(path + key).c_str(), cmds.c_str());
+        reply = static_cast<redisReply*>(redisCommandArgv(c, (int)cmds.size(), &(argv[0]), &(argvlen[0])));
         this->srv->unlock();
     }
+    
+    
+//    std::ostringstream out;
+//    for (auto m : fieldvalues) {
+//        out << m.first << " " << m.second << " ";
+//    }
+//    std::string cmds(out.str());
+//    redisReply *reply = NULL;
+//    {
+//        this->srv->lock();
+//        reply = (redisReply *)redisCommand(c, "HMSET %s %s", std::string(path + key).c_str(), cmds.c_str());
+//        this->srv->unlock();
+//    }
 
     long long r = -1;
     if (reply) {

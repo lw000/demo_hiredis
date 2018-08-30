@@ -75,12 +75,16 @@ int main(int argc, const char * argv[]) {
     
     long long c = redisSrv.stringCommand()->setnx("config:autoincr", "1000000");
     printf("%lld\n", c);
+    
     std::map<std::string, std::string> m;
     m["aaa1"] = "aaa1";
     m["bbb1"] = "bbb1";
     m["ccc1"] = "ccc1";
+    
     redisSrv.stringCommand()->mset(m);
-    redisSrv.stringCommand()->mget({"aaa1", "bbb1", "ccc1"});
+    std::vector<std::string> r = redisSrv.stringCommand()->mget({"aaa1", "bbb1", "ccc1"});
+    
+    redisSrv.hashCommand()->hmset("uu", m);
     
     pthread_mutex_init(&mutext_t, NULL);
     pthread_cond_init(&cond_t, NULL);
